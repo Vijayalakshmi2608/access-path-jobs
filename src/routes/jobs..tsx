@@ -9,7 +9,7 @@ import { useAppState } from "@/lib/app-state";
 import { useTextToSpeech } from "@/lib/speech";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/jobs/$jobId")({
+export const Route = createFileRoute("/jobs/")({
   loader: ({ params }) => {
     const job = getJob(params.jobId);
     if (!job) throw notFound();
