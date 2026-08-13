@@ -35,7 +35,7 @@ export type Job = {
   employment: Employment;
   experience: ExperienceBand;
   category: Category;
-  salary?: string;
+  salary?: string | undefined;
   posted: string;
   about: string;
   responsibilities: string[];

@@ -88,7 +88,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof document === "undefined") return;
     document.documentElement.classList.toggle("hc", highContrast);
-    document.documentElement.dataset.fontSize = fontSize;
+    document.documentElement.dataset["fontSize"] = fontSize;
   }, [highContrast, fontSize]);
 
   const toggleSaved = useCallback((id: string) => {
