@@ -48,7 +48,7 @@ export type Job = {
 };
 
 type Tuple = [
-  string, string, string, WorkMode, Employment, ExperienceBand, Category,
+  string, string, string, string, WorkMode, Employment, ExperienceBand, Category,
   string | undefined, string, string, string[], string[], string[],
   AccessFeature[], InclusionFeature[], Job["accessSource"],
 ];
@@ -197,10 +197,11 @@ const rows: Tuple[] = [
 ];
 
 export const JOBS: Job[] = rows.map((r) => ({
-  id: r[0], title: r[1], company: r[2], city: r[3] === "Remote" ? "Remote (India)" : r[3],
-  workMode: r[3], employment: r[4], experience: r[5], category: r[6], salary: r[7],
-  posted: r[8], about: r[9], responsibilities: r[10], requiredSkills: r[11],
-  preferredSkills: r[12], access: r[13], inclusion: r[14], accessSource: r[15],
+  id: r[0], title: r[1], company: r[2],
+  city: r[3] === "Remote" ? "Remote (India)" : r[3],
+  workMode: r[4], employment: r[5], experience: r[6], category: r[7], salary: r[8],
+  posted: r[9], about: r[10], responsibilities: r[11], requiredSkills: r[12],
+  preferredSkills: r[13], access: r[14], inclusion: r[15], accessSource: r[16],
 }));
 
 export const CITIES = Array.from(new Set(JOBS.map((j) => j.city))).sort();
