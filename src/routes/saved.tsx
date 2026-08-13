@@ -34,7 +34,7 @@ function SavedPage() {
             Save roles while you search so you can compare accessibility details later.
           </p>
           <Button asChild className="mt-4">
-            <Link to="/jobs">Find jobs</Link>
+            <Link to="/jobs" search={{ q: "" }}>Find jobs</Link>
           </Button>
         </div>
       ) : (

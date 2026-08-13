@@ -11,7 +11,7 @@ import { EMPTY_FILTERS, filterJobs, type Filters } from "@/lib/search";
 
 export const Route = createFileRoute("/jobs/")({
   validateSearch: (search: Record<string, unknown>) => ({
-    q: typeof search.q === "string" ? search.q : "",
+    q: typeof search["q"] === "string" ? (search["q"] as string) : "",
   }),
   head: () => ({
     meta: [

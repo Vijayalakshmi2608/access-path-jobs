@@ -68,7 +68,7 @@ function Landing() {
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Button asChild size="lg">
-                <Link to="/jobs">Find Jobs</Link>
+                <Link to="/jobs" search={{ q: "" }}>Find Jobs</Link>
               </Button>
               <Button asChild size="lg" variant="outline">
                 <Link to="/profile">Create Profile</Link>
@@ -137,7 +137,7 @@ function Landing() {
             Latest opportunities
           </h2>
           <Button asChild variant="outline">
-            <Link to="/jobs">Browse all {JOBS.length} jobs</Link>
+            <Link to="/jobs" search={{ q: "" }}>Browse all {JOBS.length} jobs</Link>
           </Button>
         </div>
         <ul className="mt-6 grid gap-4">

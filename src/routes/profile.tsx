@@ -123,7 +123,7 @@ function ProfilePage() {
           </Field>
           <Field label="Work preference" id="workPreference">
             <Select
-              value={form.workPreference || undefined}
+              {...(form.workPreference ? { value: form.workPreference } : {})}
               onValueChange={(v) => set("workPreference", v as Profile["workPreference"])}
             >
               <SelectTrigger id="workPreference">
