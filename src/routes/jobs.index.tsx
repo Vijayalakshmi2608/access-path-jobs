@@ -8,6 +8,7 @@ import {
   ACCESS_FEATURES, CITIES, INCLUSION_FEATURES,
 } from "@/lib/jobs-data";
 import { EMPTY_FILTERS, filterJobs, type Filters } from "@/lib/search";
+import { useAppState } from "@/lib/app-state";
 
 export const Route = createFileRoute("/jobs/")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -73,10 +74,11 @@ const GROUPS: Group[] = [
 function JobsPage() {
   const { q } = Route.useSearch();
   const navigate = useNavigate();
+  const { allJobs } = useAppState();
   const [filters, setFilters] = useState<Filters>({ ...EMPTY_FILTERS, q });
   const query = q || filters.q;
 
-  const results = useMemo(() => filterJobs({ ...filters, q: query }), [filters, query]);
+  const results = useMemo(() => filterJobs({ ...filters, q: query }, allJobs), [filters, query, allJobs]);
   const activeCount = GROUPS.reduce((n, g) => n + (filters[g.key] as string[]).length, 0);
 
   const toggle = (key: keyof Filters, value: string) =>

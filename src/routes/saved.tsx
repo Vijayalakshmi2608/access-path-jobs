@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { JobCard } from "@/components/job-card";
 import { useAppState } from "@/lib/app-state";
-import { JOBS } from "@/lib/jobs-data";
 
 export const Route = createFileRoute("/saved")({
   head: () => ({
@@ -17,8 +16,8 @@ export const Route = createFileRoute("/saved")({
 });
 
 function SavedPage() {
-  const { savedJobs } = useAppState();
-  const jobs = JOBS.filter((j) => savedJobs.includes(j.id));
+  const { savedJobs, allJobs } = useAppState();
+  const jobs = allJobs.filter((j) => savedJobs.includes(j.id));
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">

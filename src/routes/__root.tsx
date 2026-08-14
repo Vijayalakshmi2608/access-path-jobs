@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { AppStateProvider } from "../lib/app-state";
 import { SiteFooter, SiteHeader } from "../components/site-header";
 import { Toaster } from "../components/ui/sonner";
+import { CareerAssistant } from "../components/career-assistant";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {
@@ -142,6 +143,7 @@ function RootComponent() {
             <Outlet />
           </main>
           <SiteFooter />
+          <CareerAssistant />
           <Toaster />
         </div>
       </AppStateProvider>
