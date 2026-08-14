@@ -111,6 +111,24 @@ function ProfilePage() {
           <Field label="Experience" id="experience">
             <Textarea id="experience" rows={4} value={form.experience} onChange={(e) => set("experience", e.target.value)} />
           </Field>
+          <Field label="Experience level" id="experienceBand" hint="Used for match scoring">
+            <Select
+              {...(form.experienceBand ? { value: form.experienceBand } : {})}
+              onValueChange={(v) => set("experienceBand", v as Profile["experienceBand"])}
+            >
+              <SelectTrigger id="experienceBand">
+                <SelectValue placeholder="Select your experience level" />
+              </SelectTrigger>
+              <SelectContent>
+                {["Fresher", "0-2 years", "2-5 years", "5+ years"].map((v) => (
+                  <SelectItem key={v} value={v}>{v}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Career interests" id="careerInterests" hint="For example: frontend development, accessibility engineering">
+            <Input id="careerInterests" value={form.careerInterests} onChange={(e) => set("careerInterests", e.target.value)} />
+          </Field>
           <Field label="Certifications" id="certifications">
             <Textarea id="certifications" rows={2} value={form.certifications} onChange={(e) => set("certifications", e.target.value)} />
           </Field>

@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Bookmark, BookmarkCheck, CheckCircle2, Pause, Play, Square, Volume2,
 } from "lucide-react";
@@ -7,13 +7,13 @@ import { Separator } from "@/components/ui/separator";
 import { ACCESS_FEATURES, INCLUSION_FEATURES, getJob } from "@/lib/jobs-data";
 import { useAppState } from "@/lib/app-state";
 import { useTextToSpeech } from "@/lib/speech";
-import { toast } from "sonner";
+import { MatchScoreCard, WhyThisJob } from "@/components/match-insights";
+import { scoreJob } from "@/lib/matching";
 
 export const Route = createFileRoute("/jobs/$jobId")({
   loader: ({ params }) => {
     const job = getJob(params.jobId);
-    if (!job) throw notFound();
-    return { job };
+    return job ? { job } : null;
   },
   head: ({ loaderData }) => {
     if (!loaderData) {
@@ -58,9 +58,25 @@ function TickList({ items }: { items: string[] }) {
 }
 
 function JobDetails() {
-  const { job } = Route.useLoaderData();
-  const { isSaved, toggleSaved, apply, hasApplied } = useAppState();
+  const data = Route.useLoaderData();
+  const { jobId } = Route.useParams();
+  const { isSaved, toggleSaved, hasApplied, findJob, profile } = useAppState();
   const tts = useTextToSpeech();
+  const job = data?.job ?? findJob(jobId);
+
+  if (!job) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-12">
+        <h1 className="text-2xl font-bold">This job could not be found</h1>
+        <p className="mt-2 text-muted-foreground">The listing may have been removed.</p>
+        <Button asChild className="mt-4">
+          <Link to="/jobs" search={{ q: "" }}>Back to job search</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  const match = scoreJob(profile, job);
   const saved = isSaved(job.id);
   const applied = hasApplied(job.id);
 
@@ -88,9 +104,15 @@ function JobDetails() {
           {job.salary ? ` • ${job.salary}` : ""}
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
-          <Button onClick={() => { apply(job.id); toast.success("Application recorded"); }} disabled={applied}>
-            {applied ? "Applied" : "Apply with confidence"}
-          </Button>
+          {applied ? (
+            <Button asChild variant="secondary">
+              <Link to="/applications">Applied — track application</Link>
+            </Button>
+          ) : (
+            <Button asChild>
+              <Link to="/apply/$jobId" params={{ jobId: job.id }}>Apply now</Link>
+            </Button>
+          )}
           <Button
             variant="outline"
             aria-pressed={saved}
@@ -134,6 +156,8 @@ function JobDetails() {
 
       <div className="mt-6 grid gap-6 md:grid-cols-[1fr_280px]">
         <div className="space-y-6">
+          <MatchScoreCard match={match} />
+          <WhyThisJob match={match} />
           <section aria-labelledby="about-heading" className="surface-card p-5">
             <h2 id="about-heading" className="text-xl font-semibold">About the role</h2>
             <p className="mt-2 text-sm">{job.about}</p>

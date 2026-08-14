@@ -4,10 +4,13 @@ import { ACCESS_FEATURES, type Job } from "@/lib/jobs-data";
 import { useAppState } from "@/lib/app-state";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { MatchPill } from "@/components/match-insights";
+import { scoreJob } from "@/lib/matching";
 
 export function JobCard({ job }: { job: Job }) {
-  const { isSaved, toggleSaved } = useAppState();
+  const { isSaved, toggleSaved, profile } = useAppState();
   const saved = isSaved(job.id);
+  const match = scoreJob(profile, job);
 
   return (
     <article className="surface-card p-4 sm:p-5" aria-labelledby={`job-${job.id}-title`}>
@@ -50,6 +53,10 @@ export function JobCard({ job }: { job: Job }) {
           {saved ? <BookmarkCheck aria-hidden="true" /> : <Bookmark aria-hidden="true" />}
         </Button>
       </div>
+
+      <p className="mt-3">
+        <MatchPill score={match.total} />
+      </p>
 
       <p className="mt-3 text-sm">
         <span className="font-medium">Skills: </span>
