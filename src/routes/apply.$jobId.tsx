@@ -10,7 +10,7 @@ import { MatchPill } from "@/components/match-insights";
 import { useAppState } from "@/lib/app-state";
 import { scoreJob } from "@/lib/matching";
 
-export const Route = createFileRoute("/apply/")({
+export const Route = createFileRoute("/apply/$jobId")({
   head: () => ({
     meta: [
       { title: "Apply to a role — AccessPath" },

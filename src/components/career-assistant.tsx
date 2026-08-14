@@ -76,7 +76,7 @@ function answer(q: string, profile: Profile, jobs: Job[]): { text: string; jobId
     const missing = top?.missingRequired ?? [];
     return {
       text: `Open Resume match, paste your resume and pick a role. ${missing.length ? `For ${top?.job.title}, make sure your resume evidences ${missing.slice(0, 3).join(", ")}.` : "Then mirror the job's own wording in your summary line and quantify each bullet."} Every bullet should show action, tool and measurable result.`,
-      jobIds: top ? [top.job.id] : undefined,
+      ...(top ? { jobIds: [top.job.id] } : {}),
     };
   }
 
