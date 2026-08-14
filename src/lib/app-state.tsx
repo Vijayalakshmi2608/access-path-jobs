@@ -1,6 +1,7 @@
 import {
   createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode,
 } from "react";
+import { JOBS, type Job } from "./jobs-data";
 
 export type FontSize = "small" | "medium" | "large";
 
@@ -10,22 +11,46 @@ export type Profile = {
   skills: string[];
   education: string;
   experience: string;
+  /** Self-declared experience band, used for match scoring. */
+  experienceBand: "" | "Fresher" | "0-2 years" | "2-5 years" | "5+ years";
+  careerInterests: string;
   certifications: string;
   preferredLocation: string;
   workPreference: "" | "Remote" | "Hybrid" | "On-site" | "No preference";
   resumeName: string;
+  /** Pasted or extracted resume text, used for resume→job matching. */
+  resumeText: string;
   /** Optional, private by default. Never shown publicly unless shared. */
   accessibilityPreferences: string[];
   shareAccessibilityWithEmployers: boolean;
 };
 
 export const EMPTY_PROFILE: Profile = {
-  name: "", headline: "", skills: [], education: "", experience: "",
-  certifications: "", preferredLocation: "", workPreference: "",
-  resumeName: "", accessibilityPreferences: [], shareAccessibilityWithEmployers: false,
+  name: "", headline: "", skills: [], education: "", experience: "", experienceBand: "",
+  careerInterests: "", certifications: "", preferredLocation: "", workPreference: "",
+  resumeName: "", resumeText: "", accessibilityPreferences: [],
+  shareAccessibilityWithEmployers: false,
 };
 
-export type Application = { jobId: string; status: "Applied" | "In review" | "Interview"; date: string };
+export const APPLICATION_STATUSES = [
+  "Applied", "Under Review", "Shortlisted", "Interview", "Offer", "Rejected",
+] as const;
+export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
+
+export type Application = {
+  jobId: string;
+  status: ApplicationStatus;
+  date: string;
+  resumeName: string;
+  coverLetter: string;
+  /** Optional interview accommodation requests chosen by the candidate. */
+  accommodations: string[];
+  accommodationNote: string;
+  /** Candidate decides whether accommodation requests are shared. */
+  shareAccommodations: boolean;
+  matchScore: number;
+  nextStep: string;
+};
 
 type State = {
   highContrast: boolean;
@@ -39,12 +64,18 @@ type State = {
   saveProfile: (p: Profile) => void;
   profileCompletion: number;
   applications: Application[];
-  apply: (jobId: string) => void;
+  apply: (app: Omit<Application, "status" | "date" | "nextStep"> & { nextStep?: string }) => void;
+  setApplicationStatus: (jobId: string, status: ApplicationStatus, nextStep?: string) => void;
   hasApplied: (jobId: string) => boolean;
+  getApplication: (jobId: string) => Application | undefined;
+  employerJobs: Job[];
+  addEmployerJob: (job: Job) => void;
+  allJobs: Job[];
+  findJob: (id: string) => Job | undefined;
 };
 
 const Ctx = createContext<State | null>(null);
-const KEY = "accesspath:state:v1";
+const KEY = "accesspath:state:v2";
 
 function read<T>(fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -63,17 +94,19 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [savedJobs, setSavedJobs] = useState<string[]>([]);
   const [profile, setProfile] = useState<Profile>(EMPTY_PROFILE);
   const [applications, setApplications] = useState<Application[]>([]);
+  const [employerJobs, setEmployerJobs] = useState<Job[]>([]);
 
   useEffect(() => {
     const s = read({
       highContrast: false, fontSize: "medium" as FontSize, savedJobs: [] as string[],
-      profile: EMPTY_PROFILE, applications: [] as Application[],
+      profile: EMPTY_PROFILE, applications: [] as Application[], employerJobs: [] as Job[],
     });
     setHighContrast(s.highContrast);
     setFontSize(s.fontSize);
     setSavedJobs(s.savedJobs);
     setProfile({ ...EMPTY_PROFILE, ...s.profile });
     setApplications(s.applications);
+    setEmployerJobs(s.employerJobs);
     setHydrated(true);
   }, []);
 
@@ -81,9 +114,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     if (!hydrated) return;
     window.localStorage.setItem(
       KEY,
-      JSON.stringify({ highContrast, fontSize, savedJobs, profile, applications }),
+      JSON.stringify({ highContrast, fontSize, savedJobs, profile, applications, employerJobs }),
     );
-  }, [hydrated, highContrast, fontSize, savedJobs, profile, applications]);
+  }, [hydrated, highContrast, fontSize, savedJobs, profile, applications, employerJobs]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -98,12 +131,15 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const profileCompletion = useMemo(() => {
     const checks = [
       profile.name, profile.headline, profile.skills.length > 0, profile.education,
-      profile.experience, profile.certifications, profile.preferredLocation,
-      profile.workPreference, profile.resumeName,
+      profile.experience, profile.experienceBand, profile.careerInterests,
+      profile.certifications, profile.preferredLocation, profile.workPreference,
+      profile.resumeName || profile.resumeText,
     ];
     const done = checks.filter(Boolean).length;
     return Math.round((done / checks.length) * 100);
   }, [profile]);
+
+  const allJobs = useMemo(() => [...employerJobs, ...JOBS], [employerJobs]);
 
   const value: State = {
     highContrast, setHighContrast, fontSize, setFontSize,
@@ -113,17 +149,47 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     saveProfile: setProfile,
     profileCompletion,
     applications,
-    apply: (jobId) =>
+    apply: (app) =>
       setApplications((prev) =>
-        prev.some((a) => a.jobId === jobId)
+        prev.some((a) => a.jobId === app.jobId)
           ? prev
-          : [{ jobId, status: "Applied", date: new Date().toISOString().slice(0, 10) }, ...prev],
+          : [
+              {
+                ...app,
+                status: "Applied" as ApplicationStatus,
+                date: new Date().toISOString().slice(0, 10),
+                nextStep: app.nextStep ?? "Employer review — you'll see status changes here.",
+              },
+              ...prev,
+            ],
+      ),
+    setApplicationStatus: (jobId, status, nextStep) =>
+      setApplications((prev) =>
+        prev.map((a) =>
+          a.jobId === jobId
+            ? { ...a, status, nextStep: nextStep ?? NEXT_STEPS[status] }
+            : a,
+        ),
       ),
     hasApplied: (jobId) => applications.some((a) => a.jobId === jobId),
+    getApplication: (jobId) => applications.find((a) => a.jobId === jobId),
+    employerJobs,
+    addEmployerJob: (job) => setEmployerJobs((prev) => [job, ...prev]),
+    allJobs,
+    findJob: (id) => allJobs.find((j) => j.id === id),
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
+
+export const NEXT_STEPS: Record<ApplicationStatus, string> = {
+  Applied: "Employer review — you'll see status changes here.",
+  "Under Review": "The hiring team is reviewing your profile and resume.",
+  Shortlisted: "Expect an interview invitation with format and accessibility details.",
+  Interview: "Confirm your interview slot and any accommodation you requested.",
+  Offer: "Review the offer details and respond to the employer.",
+  Rejected: "Not this time. Your match insights can guide the next application.",
+};
 
 export function useAppState() {
   const ctx = useContext(Ctx);
