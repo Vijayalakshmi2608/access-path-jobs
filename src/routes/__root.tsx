@@ -81,27 +81,30 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "AccessPath — Inclusive Job Search in India" },
+      { title: "AccessPath — Find Jobs Without Barriers" },
       {
         name: "description",
         content:
-          "AccessPath connects job seekers with opportunities and employers that share transparent accessibility and inclusive workplace information.",
+          "Search Indian jobs with transparent accessibility and inclusive workplace information, voice search and read-aloud job descriptions.",
       },
-      { property: "og:title", content: "AccessPath — Inclusive Job Search in India" },
+      { property: "og:title", content: "AccessPath — Find Jobs Without Barriers" },
       {
         property: "og:description",
-        content: "Search jobs with accessibility and inclusion details you can trust.",
+        content: "Search Indian jobs with transparent accessibility and inclusive workplace information, voice search and read-aloud job descriptions.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "AccessPath — Find Jobs Without Barriers" },
+      { name: "twitter:description", content: "Search Indian jobs with transparent accessibility and inclusive workplace information, voice search and read-aloud job descriptions." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/3cc09cf96ebc28c7a25a6ff27cdead62/id-preview-f7dd6668--136f3d28-ee81-4c72-8d8d-6ba12329f731.lovable.app-1786687539232.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/3cc09cf96ebc28c7a25a6ff27cdead62/id-preview-f7dd6668--136f3d28-ee81-4c72-8d8d-6ba12329f731.lovable.app-1786687539232.png" },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {

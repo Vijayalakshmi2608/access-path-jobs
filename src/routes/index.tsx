@@ -19,7 +19,7 @@ export const Route = createFileRoute("/")({
       {
         property: "og:description",
         content:
-          "Find opportunities, discover inclusive employers and apply with confidence.",
+          "Search Indian jobs with transparent accessibility and inclusive workplace information, voice search and read-aloud job descriptions.",
       },
     ],
   }),
