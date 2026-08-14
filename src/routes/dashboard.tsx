@@ -5,8 +5,8 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { JobCard } from "@/components/job-card";
 import { useAppState } from "@/lib/app-state";
-import { JOBS, getJob } from "@/lib/jobs-data";
-import { recommendJobs } from "@/lib/search";
+import { MatchPill } from "@/components/match-insights";
+import { averageMatch, rankJobs } from "@/lib/matching";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -39,9 +39,10 @@ function Stat({
 }
 
 function Dashboard() {
-  const { savedJobs, applications, profile, profileCompletion } = useAppState();
-  const recommended = recommendJobs(profile, 4);
-  const hasSignal = recommended.some((r) => r.matched);
+  const { savedJobs, applications, profile, profileCompletion, allJobs, findJob } = useAppState();
+  const recommended = rankJobs(profile, allJobs, 3);
+  const avg = averageMatch(profile, allJobs);
+  const hasSignal = recommended.some((r) => r.hasProfileSignal);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -53,9 +54,9 @@ function Dashboard() {
       </p>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat icon={Briefcase} label="Recommended jobs" value={String(recommended.length)} to="/jobs" cta="Browse all jobs" />
+        <Stat icon={Briefcase} label="Your match score" value={`${avg}%`} to="/jobs" cta="Browse recommended jobs" />
         <Stat icon={Bookmark} label="Saved jobs" value={String(savedJobs.length)} to="/saved" cta="View saved jobs" />
-        <Stat icon={FileCheck2} label="Applications" value={String(applications.length)} to="/jobs" cta="Find more roles" />
+        <Stat icon={FileCheck2} label="Applications" value={String(applications.length)} to="/applications" cta="Track applications" />
         <div className="surface-card p-5">
           <UserCheck aria-hidden="true" className="size-5 text-brand" />
           <p className="mt-3 text-sm text-muted-foreground">Profile completion</p>
@@ -73,7 +74,7 @@ function Dashboard() {
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_320px]">
         <section aria-labelledby="rec-heading">
-          <h2 id="rec-heading" className="text-2xl font-bold">Recommended jobs</h2>
+          <h2 id="rec-heading" className="text-2xl font-bold">Recommended for you</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {hasSignal
               ? "Matched to your skills, preferred location and work preference."
@@ -99,7 +100,7 @@ function Dashboard() {
             ) : (
               <ul className="mt-3 space-y-3">
                 {applications.map((a) => {
-                  const job = getJob(a.jobId);
+                  const job = findJob(a.jobId);
                   if (!job) return null;
                   return (
                     <li key={a.jobId} className="text-sm">
@@ -107,7 +108,10 @@ function Dashboard() {
                         {job.title}
                       </Link>
                       <p className="text-muted-foreground">{job.company} • applied {a.date}</p>
-                      <Badge variant="secondary" className="mt-1 font-normal">{a.status}</Badge>
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
+                        <Badge variant="secondary" className="font-normal">{a.status}</Badge>
+                        {a.matchScore ? <MatchPill score={a.matchScore} /> : null}
+                      </div>
                     </li>
                   );
                 })}
@@ -140,8 +144,20 @@ function Dashboard() {
             </Button>
           </section>
 
+          <section aria-labelledby="prefs-heading" className="surface-card p-5">
+            <h2 id="prefs-heading" className="text-lg font-semibold">Accessibility preferences</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {profile.accessibilityPreferences.length
+                ? profile.accessibilityPreferences.join(" • ")
+                : "None set. These are optional and private by default."}
+            </p>
+            <Button asChild variant="outline" className="mt-3 w-full">
+              <Link to="/profile">Edit accessibility preferences</Link>
+            </Button>
+          </section>
+
           <p className="text-xs text-muted-foreground">
-            {JOBS.length} active listings across software, data, design, support, HR, marketing,
+            {allJobs.length} active listings across software, data, design, support, HR, marketing,
             content, finance and operations.
           </p>
         </aside>
