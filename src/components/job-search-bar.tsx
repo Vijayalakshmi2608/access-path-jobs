@@ -3,20 +3,33 @@ import { Mic, MicOff, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useVoiceSearch, normaliseSpokenQuery } from "@/lib/speech";
+import { parseVoiceQuery, type QueryChip } from "@/lib/voice-query";
+import type { Filters } from "@/lib/search";
 
 export function JobSearchBar({
   value,
   onChange,
   onSubmit,
+  onVoiceParse,
   id = "job-search",
 }: {
   value: string;
   onChange: (v: string) => void;
   onSubmit?: (v: string) => void;
+  /** When provided, spoken queries become structured filters instead of plain text. */
+  onVoiceParse?: (result: { filters: Filters; chips: QueryChip[]; heard: string }) => void;
   id?: string;
 }) {
   const [status, setStatus] = useState("");
   const { supported, listening, start, stop } = useVoiceSearch((text) => {
+    if (onVoiceParse) {
+      const parsed = parseVoiceQuery(text);
+      const labels = parsed.chips.map((c) => c.label).join(", ");
+      setStatus(`Heard: ${text}. Searching for ${labels || "all jobs"}.`);
+      onChange(parsed.filters.q);
+      onVoiceParse({ ...parsed, heard: text });
+      return;
+    }
     const cleaned = normaliseSpokenQuery(text);
     setStatus(`Heard: ${text}. Searching for ${cleaned}.`);
     onChange(cleaned);
@@ -63,6 +76,11 @@ export function JobSearchBar({
             {listening ? <MicOff aria-hidden="true" /> : <Mic aria-hidden="true" />}
           </Button>
         </div>
+        {supported ? (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Try: “Find remote frontend developer jobs with accessible interviews.”
+          </p>
+        ) : null}
       </div>
       <div className="flex items-end">
         <Button type="submit" className="h-11 w-full sm:w-auto">
