@@ -7,6 +7,12 @@ export type FontSize = "small" | "medium" | "large";
 
 export type Profile = {
   name: string;
+  /** Name the candidate wants employers to see. Falls back to name. */
+  displayName: string;
+  /** Optional. Never required, never used in matching. */
+  pronouns: string;
+  /** Optional, only for later stages of an employer's process. Never shown by default. */
+  legalName: string;
   headline: string;
   skills: string[];
   education: string;
@@ -23,13 +29,19 @@ export type Profile = {
   /** Optional, private by default. Never shown publicly unless shared. */
   accessibilityPreferences: string[];
   shareAccessibilityWithEmployers: boolean;
+  /** Privacy centre switches. Off means the field is never sent to employers. */
+  sharePronouns: boolean;
+  shareAccommodationsByDefault: boolean;
+  shareOtherPersonal: boolean;
 };
 
 export const EMPTY_PROFILE: Profile = {
-  name: "", headline: "", skills: [], education: "", experience: "", experienceBand: "",
+  name: "", displayName: "", pronouns: "", legalName: "",
+  headline: "", skills: [], education: "", experience: "", experienceBand: "",
   careerInterests: "", certifications: "", preferredLocation: "", workPreference: "",
   resumeName: "", resumeText: "", accessibilityPreferences: [],
-  shareAccessibilityWithEmployers: false,
+  shareAccessibilityWithEmployers: false, sharePronouns: false,
+  shareAccommodationsByDefault: false, shareOtherPersonal: false,
 };
 
 export const APPLICATION_STATUSES = [
@@ -52,6 +64,22 @@ export type Application = {
   nextStep: string;
 };
 
+export type FeedbackAnswer = "Yes" | "Partially" | "No";
+
+/**
+ * Private accessibility feedback. Stored for moderation review only — it is
+ * never published against an employer automatically.
+ */
+export type Feedback = {
+  id: string;
+  jobId: string;
+  date: string;
+  accessible: FeedbackAnswer;
+  respectful: FeedbackAnswer | "";
+  note: string;
+  status: "Awaiting moderation";
+};
+
 type State = {
   highContrast: boolean;
   setHighContrast: (v: boolean) => void;
@@ -70,12 +98,14 @@ type State = {
   getApplication: (jobId: string) => Application | undefined;
   employerJobs: Job[];
   addEmployerJob: (job: Job) => void;
+  feedback: Feedback[];
+  addFeedback: (f: Omit<Feedback, "id" | "date" | "status">) => void;
   allJobs: Job[];
   findJob: (id: string) => Job | undefined;
 };
 
 const Ctx = createContext<State | null>(null);
-const KEY = "accesspath:state:v2";
+const KEY = "accesspath:state:v3";
 
 function read<T>(fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -95,11 +125,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile>(EMPTY_PROFILE);
   const [applications, setApplications] = useState<Application[]>([]);
   const [employerJobs, setEmployerJobs] = useState<Job[]>([]);
+  const [feedback, setFeedback] = useState<Feedback[]>([]);
 
   useEffect(() => {
     const s = read({
       highContrast: false, fontSize: "medium" as FontSize, savedJobs: [] as string[],
       profile: EMPTY_PROFILE, applications: [] as Application[], employerJobs: [] as Job[],
+      feedback: [] as Feedback[],
     });
     setHighContrast(s.highContrast);
     setFontSize(s.fontSize);
@@ -107,6 +139,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setProfile({ ...EMPTY_PROFILE, ...s.profile });
     setApplications(s.applications);
     setEmployerJobs(s.employerJobs);
+    setFeedback(s.feedback);
     setHydrated(true);
   }, []);
 
@@ -114,9 +147,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     if (!hydrated) return;
     window.localStorage.setItem(
       KEY,
-      JSON.stringify({ highContrast, fontSize, savedJobs, profile, applications, employerJobs }),
+      JSON.stringify({ highContrast, fontSize, savedJobs, profile, applications, employerJobs, feedback }),
     );
-  }, [hydrated, highContrast, fontSize, savedJobs, profile, applications, employerJobs]);
+  }, [hydrated, highContrast, fontSize, savedJobs, profile, applications, employerJobs, feedback]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -175,6 +208,17 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     getApplication: (jobId) => applications.find((a) => a.jobId === jobId),
     employerJobs,
     addEmployerJob: (job) => setEmployerJobs((prev) => [job, ...prev]),
+    feedback,
+    addFeedback: (f) =>
+      setFeedback((prev) => [
+        {
+          ...f,
+          id: `${f.jobId}-${Date.now()}`,
+          date: new Date().toISOString().slice(0, 10),
+          status: "Awaiting moderation" as const,
+        },
+        ...prev,
+      ]),
     allJobs,
     findJob: (id) => allJobs.find((j) => j.id === id),
   };
