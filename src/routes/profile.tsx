@@ -11,6 +11,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useAppState, type Profile } from "@/lib/app-state";
+import { ACCESS_PREFERENCE_OPTIONS, normalisePrefs } from "@/lib/accessibility";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -27,16 +28,6 @@ export const Route = createFileRoute("/profile")({
   }),
   component: ProfilePage,
 });
-
-const ACCESS_PREFS = [
-  "Screen reader user",
-  "Keyboard-only navigation",
-  "Magnification / large text",
-  "Captions for meetings",
-  "Assistive technology at work",
-  "Flexible or remote working",
-  "Accessible interview format",
-];
 
 function Field({
   label, id, hint, children,
@@ -89,6 +80,28 @@ function ProfilePage() {
           <Field label="Full name" id="name">
             <Input id="name" value={form.name} onChange={(e) => set("name", e.target.value)} />
           </Field>
+          <Field
+            label="Display name"
+            id="displayName"
+            hint="The name employers see. Leave blank to use your full name."
+          >
+            <Input id="displayName" value={form.displayName} onChange={(e) => set("displayName", e.target.value)} />
+          </Field>
+          <Field label="Pronouns (optional)" id="pronouns" hint="For example: she/her, he/him, they/them. Shared only if you turn it on in My Privacy.">
+            <Input id="pronouns" value={form.pronouns} onChange={(e) => set("pronouns", e.target.value)} />
+          </Field>
+          <Field
+            label="Legal name (optional)"
+            id="legalName"
+            hint="Only needed if an employer requires it for background or payroll checks later. Never shown on your profile or in applications."
+          >
+            <Input id="legalName" value={form.legalName} onChange={(e) => set("legalName", e.target.value)} />
+          </Field>
+          <p className="rounded-md border border-border bg-secondary/50 p-3 text-xs text-muted-foreground">
+            Your professional identity — display name, pronouns, headline and skills — is separate
+            from legal information an employer may request later in a hiring process. You are never
+            asked to state or explain a gender identity.
+          </p>
           <Field label="Professional headline" id="headline" hint="For example: Frontend developer focused on accessible interfaces">
             <Input id="headline" value={form.headline} onChange={(e) => set("headline", e.target.value)} />
           </Field>
@@ -179,11 +192,12 @@ function ProfilePage() {
           <fieldset>
             <legend className="text-sm font-medium">What support matters to you?</legend>
             <ul className="mt-2 grid gap-2 sm:grid-cols-2">
-              {ACCESS_PREFS.map((pref) => {
-                const id = `pref-${pref.replace(/\W+/g, "-")}`;
-                const checked = form.accessibilityPreferences.includes(pref);
+              {ACCESS_PREFERENCE_OPTIONS.map((pref) => {
+                const id = `pref-${pref.key}`;
+                const current = normalisePrefs(form.accessibilityPreferences);
+                const checked = current.includes(pref.key);
                 return (
-                  <li key={pref} className="flex items-center gap-2">
+                  <li key={pref.key} className="flex items-center gap-2">
                     <Checkbox
                       id={id}
                       checked={checked}
@@ -191,17 +205,21 @@ function ProfilePage() {
                         set(
                           "accessibilityPreferences",
                           checked
-                            ? form.accessibilityPreferences.filter((p) => p !== pref)
-                            : [...form.accessibilityPreferences, pref],
+                            ? current.filter((p) => p !== pref.key)
+                            : [...current, pref.key],
                         )
                       }
                     />
-                    <label htmlFor={id} className="text-sm">{pref}</label>
+                    <label htmlFor={id} className="text-sm">{pref.label}</label>
                   </li>
                 );
               })}
             </ul>
           </fieldset>
+          <p className="text-xs text-muted-foreground">
+            These power your Accessibility Fit on each role. They never change your match score and
+            are never shared unless you switch sharing on.
+          </p>
           <div className="flex items-start gap-3 rounded-md border border-border bg-secondary/50 p-3">
             <Switch
               id="share-access"

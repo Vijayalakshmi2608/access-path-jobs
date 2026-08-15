@@ -1,14 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-  Bookmark, BookmarkCheck, CheckCircle2, Pause, Play, Square, Volume2,
-} from "lucide-react";
+import { useState } from "react";
+import { Bookmark, BookmarkCheck, FileText, LayoutList } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { ACCESS_FEATURES, INCLUSION_FEATURES, getJob } from "@/lib/jobs-data";
+import { getJob } from "@/lib/jobs-data";
 import { useAppState } from "@/lib/app-state";
-import { useTextToSpeech } from "@/lib/speech";
-import { MatchScoreCard, WhyThisJob } from "@/components/match-insights";
+import { MatchScoreCard, WhyThisJob, MatchPill } from "@/components/match-insights";
 import { scoreJob } from "@/lib/matching";
+import { accessibilityFit } from "@/lib/accessibility";
+import { AccessibilityFitCard, AccessibilityTransparencyCard } from "@/components/transparency";
+import { AccessibleJobView } from "@/components/accessible-job-view";
+import { JobListen } from "@/components/job-listen";
+import { BeforeYouApply } from "@/components/before-you-apply";
+import { EmployerInclusionCard } from "@/components/employer-inclusion";
 
 export const Route = createFileRoute("/jobs/$jobId")({
   loader: ({ params }) => {
@@ -44,24 +47,11 @@ function List({ items }: { items: string[] }) {
   );
 }
 
-function TickList({ items }: { items: string[] }) {
-  return (
-    <ul className="mt-2 space-y-2 text-sm">
-      {items.map((i) => (
-        <li key={i} className="flex items-start gap-2">
-          <CheckCircle2 aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-success" />
-          {i}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
 function JobDetails() {
   const data = Route.useLoaderData();
   const { jobId } = Route.useParams();
   const { isSaved, toggleSaved, hasApplied, findJob, profile } = useAppState();
-  const tts = useTextToSpeech();
+  const [accessibleView, setAccessibleView] = useState(false);
   const job = data?.job ?? findJob(jobId);
 
   if (!job) {
@@ -77,19 +67,9 @@ function JobDetails() {
   }
 
   const match = scoreJob(profile, job);
+  const fit = accessibilityFit(profile.accessibilityPreferences, job);
   const saved = isSaved(job.id);
   const applied = hasApplied(job.id);
-
-  const spoken = [
-    `${job.title} at ${job.company}.`,
-    `${job.workMode} position in ${job.city}.`,
-    job.salary ? `Salary ${job.salary.replace("₹", "")}.` : "",
-    `Experience required: ${job.experience}. Employment type: ${job.employment}.`,
-    `About the role. ${job.about}`,
-    `Required skills: ${job.requiredSkills.join(", ")}.`,
-    `Accessibility, ${job.accessSource.toLowerCase()}: ${job.access.map((a) => ACCESS_FEATURES[a]).join(", ")}.`,
-    `Workplace inclusion: ${job.inclusion.map((i) => INCLUSION_FEATURES[i]).join(", ")}.`,
-  ].filter(Boolean).join(" ");
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
@@ -97,24 +77,36 @@ function JobDetails() {
         ← Back to job search
       </Link>
 
-      <header className="surface-card mt-4 p-5">
-        <h1 className="text-3xl font-bold">{job.title}</h1>
+      <header className="surface-card mt-4 p-5 sm:p-6">
+        <h1 className="text-2xl font-bold sm:text-3xl">{job.title}</h1>
         <p className="mt-2 text-muted-foreground">
           {job.company} • {job.city} • {job.workMode} • {job.employment} • {job.experience}
           {job.salary ? ` • ${job.salary}` : ""}
         </p>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <MatchPill score={match.total} />
+          {fit.hasPreferences ? (
+            <span className="inline-flex items-center rounded-full bg-brand/15 px-2.5 py-1 text-xs font-semibold text-brand">
+              {fit.score}% Accessibility Fit
+            </span>
+          ) : null}
+        </div>
+
         <div className="mt-4 flex flex-wrap gap-2">
           {applied ? (
-            <Button asChild variant="secondary">
+            <Button asChild variant="secondary" className="min-h-11">
               <Link to="/applications">Applied — track application</Link>
             </Button>
           ) : (
-            <Button asChild>
+            <Button asChild className="min-h-11">
               <Link to="/apply/$jobId" params={{ jobId: job.id }}>Apply now</Link>
             </Button>
           )}
+          <BeforeYouApply job={job} profile={profile} />
           <Button
             variant="outline"
+            className="min-h-11"
             aria-pressed={saved}
             onClick={() => toggleSaved(job.id)}
           >
@@ -123,71 +115,61 @@ function JobDetails() {
           </Button>
         </div>
 
-        <div className="mt-4 rounded-md border border-border bg-secondary/50 p-3">
-          <h2 className="flex items-center gap-2 text-sm font-semibold">
-            <Volume2 aria-hidden="true" className="size-4" />
-            Listen to this job
-          </h2>
-          {tts.supported ? (
-            <div className="mt-2 flex flex-wrap gap-2">
-              <Button size="sm" onClick={() => tts.play(spoken)} disabled={tts.state === "speaking"}>
-                <Play aria-hidden="true" />
-                {tts.state === "paused" ? "Resume" : "Play"}
-              </Button>
-              <Button size="sm" variant="outline" onClick={tts.pause} disabled={tts.state !== "speaking"}>
-                <Pause aria-hidden="true" />
-                Pause
-              </Button>
-              <Button size="sm" variant="outline" onClick={tts.stop} disabled={tts.state === "idle"}>
-                <Square aria-hidden="true" />
-                Stop
-              </Button>
-              <p aria-live="polite" className="sr-only">
-                Read aloud {tts.state}
-              </p>
-            </div>
-          ) : (
-            <p className="mt-1 text-sm text-muted-foreground">
-              Read-aloud isn't available in this browser. The full job text is below.
-            </p>
-          )}
-        </div>
+        <JobListen job={job} />
       </header>
 
       <div className="mt-6 grid gap-6 md:grid-cols-[1fr_280px]">
         <div className="space-y-6">
+          <section aria-labelledby="desc-heading" className="surface-card p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 id="desc-heading" className="text-xl font-semibold">
+                {accessibleView ? "Accessible view" : "Job description"}
+              </h2>
+              <Button
+                variant={accessibleView ? "default" : "outline"}
+                size="sm"
+                className="min-h-11"
+                aria-pressed={accessibleView}
+                onClick={() => setAccessibleView((v) => !v)}
+              >
+                {accessibleView ? <FileText aria-hidden="true" /> : <LayoutList aria-hidden="true" />}
+                {accessibleView ? "Original description" : "Accessible view"}
+              </Button>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Accessible view restructures the same information into short, labelled sections. The
+              original description stays available.
+            </p>
+
+            {accessibleView ? (
+              <AccessibleJobView job={job} />
+            ) : (
+              <div className="mt-4 space-y-5">
+                <div>
+                  <h3 className="text-sm font-semibold">About the role</h3>
+                  <p className="mt-2 text-sm">{job.about}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold">Responsibilities</h3>
+                  <List items={job.responsibilities} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold">Required skills</h3>
+                  <List items={job.requiredSkills} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold">Preferred skills</h3>
+                  <List items={job.preferredSkills} />
+                </div>
+              </div>
+            )}
+          </section>
+
           <MatchScoreCard match={match} />
           <WhyThisJob match={match} />
-          <section aria-labelledby="about-heading" className="surface-card p-5">
-            <h2 id="about-heading" className="text-xl font-semibold">About the role</h2>
-            <p className="mt-2 text-sm">{job.about}</p>
-          </section>
-
-          <section aria-labelledby="resp-heading" className="surface-card p-5">
-            <h2 id="resp-heading" className="text-xl font-semibold">Responsibilities</h2>
-            <List items={job.responsibilities} />
-          </section>
-
-          <section aria-labelledby="skills-heading" className="surface-card p-5">
-            <h2 id="skills-heading" className="text-xl font-semibold">Skills</h2>
-            <h3 className="mt-3 text-sm font-semibold">Required skills</h3>
-            <List items={job.requiredSkills} />
-            <h3 className="mt-4 text-sm font-semibold">Preferred skills</h3>
-            <List items={job.preferredSkills} />
-          </section>
-
-          <section aria-labelledby="access-heading" className="surface-card p-5">
-            <h2 id="access-heading" className="text-xl font-semibold">Accessibility &amp; Inclusion</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {job.accessSource}. AccessPath only shows accessibility information supplied by the
-              employer or verified by our team.
-            </p>
-            <h3 className="mt-4 text-sm font-semibold">Accessibility</h3>
-            <TickList items={job.access.map((a) => ACCESS_FEATURES[a])} />
-            <Separator className="my-4" />
-            <h3 className="text-sm font-semibold">Workplace inclusion</h3>
-            <TickList items={job.inclusion.map((i) => INCLUSION_FEATURES[i])} />
-          </section>
+          <AccessibilityFitCard job={job} preferences={profile.accessibilityPreferences} />
+          <AccessibilityTransparencyCard job={job} />
+          <EmployerInclusionCard job={job} />
         </div>
 
         <aside aria-label="Job summary" className="surface-card h-fit p-5">

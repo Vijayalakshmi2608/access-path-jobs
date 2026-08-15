@@ -1,5 +1,6 @@
-import { ACCESS_FEATURES, type Job, type ExperienceBand } from "./jobs-data";
+import { type Job, type ExperienceBand } from "./jobs-data";
 import type { Profile } from "./app-state";
+import { accessibilityFit } from "./accessibility";
 
 /**
  * Deterministic, explainable matching engine.
@@ -151,15 +152,7 @@ export function scoreJob(profile: Profile, job: Job): MatchResult {
   if (!profile.skills.length)
     reasons.push({ kind: "gap", text: "Add skills to your profile for a sharper match" });
 
-  const accessibilityFit = job.access
-    .filter((a) =>
-      profile.accessibilityPreferences.some((p) => {
-        const pref = normalise(p);
-        const feat = normalise(ACCESS_FEATURES[a]);
-        return feat.split(" ").some((w) => w.length > 4 && pref.includes(w));
-      }),
-    )
-    .map((a) => ACCESS_FEATURES[a]);
+  const fit = accessibilityFit(profile.accessibilityPreferences, job);
 
   return {
     job, total, skills, experience, career, workPreference,
@@ -167,7 +160,7 @@ export function scoreJob(profile: Profile, job: Job): MatchResult {
     requirementsTotal, requirementsMet,
     strongest: matchedRequired.slice(0, 3),
     reasons,
-    accessibilityFit,
+    accessibilityFit: fit.available.map((r) => r.label),
     hasProfileSignal: Boolean(profile.skills.length || profile.headline || profile.careerInterests),
   };
 }
