@@ -3,7 +3,8 @@ import {
 } from "react";
 import { JOBS, type Job } from "./jobs-data";
 
-export type FontSize = "small" | "medium" | "large";
+export type FontSize = "small" | "medium" | "large" | "x-large";
+export type MotionPref = "normal" | "reduced";
 
 export type Profile = {
   name: string;
@@ -85,6 +86,8 @@ type State = {
   setHighContrast: (v: boolean) => void;
   fontSize: FontSize;
   setFontSize: (v: FontSize) => void;
+  motion: MotionPref;
+  setMotion: (v: MotionPref) => void;
   savedJobs: string[];
   toggleSaved: (id: string) => void;
   isSaved: (id: string) => boolean;
@@ -121,6 +124,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
   const [highContrast, setHighContrast] = useState(false);
   const [fontSize, setFontSize] = useState<FontSize>("medium");
+  const [motion, setMotion] = useState<MotionPref>("normal");
   const [savedJobs, setSavedJobs] = useState<string[]>([]);
   const [profile, setProfile] = useState<Profile>(EMPTY_PROFILE);
   const [applications, setApplications] = useState<Application[]>([]);
@@ -131,10 +135,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     const s = read({
       highContrast: false, fontSize: "medium" as FontSize, savedJobs: [] as string[],
       profile: EMPTY_PROFILE, applications: [] as Application[], employerJobs: [] as Job[],
-      feedback: [] as Feedback[],
+      feedback: [] as Feedback[], motion: "normal" as MotionPref,
     });
     setHighContrast(s.highContrast);
     setFontSize(s.fontSize);
+    setMotion(s.motion);
     setSavedJobs(s.savedJobs);
     setProfile({ ...EMPTY_PROFILE, ...s.profile });
     setApplications(s.applications);
@@ -147,15 +152,16 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     if (!hydrated) return;
     window.localStorage.setItem(
       KEY,
-      JSON.stringify({ highContrast, fontSize, savedJobs, profile, applications, employerJobs, feedback }),
+      JSON.stringify({ highContrast, fontSize, motion, savedJobs, profile, applications, employerJobs, feedback }),
     );
-  }, [hydrated, highContrast, fontSize, savedJobs, profile, applications, employerJobs, feedback]);
+  }, [hydrated, highContrast, fontSize, motion, savedJobs, profile, applications, employerJobs, feedback]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
     document.documentElement.classList.toggle("hc", highContrast);
     document.documentElement.dataset["fontSize"] = fontSize;
-  }, [highContrast, fontSize]);
+    document.documentElement.dataset["motion"] = motion;
+  }, [highContrast, fontSize, motion]);
 
   const toggleSaved = useCallback((id: string) => {
     setSavedJobs((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [id, ...prev]));
@@ -175,7 +181,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const allJobs = useMemo(() => [...employerJobs, ...JOBS], [employerJobs]);
 
   const value: State = {
-    highContrast, setHighContrast, fontSize, setFontSize,
+    highContrast, setHighContrast, fontSize, setFontSize, motion, setMotion,
     savedJobs, toggleSaved,
     isSaved: (id) => savedJobs.includes(id),
     profile,
