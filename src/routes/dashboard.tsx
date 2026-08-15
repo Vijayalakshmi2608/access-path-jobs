@@ -7,6 +7,7 @@ import { JobCard } from "@/components/job-card";
 import { useAppState } from "@/lib/app-state";
 import { MatchPill } from "@/components/match-insights";
 import { averageMatch, rankJobs } from "@/lib/matching";
+import { NextStepCard } from "@/components/next-step-card";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -52,6 +53,15 @@ function Dashboard() {
       <p className="mt-2 text-muted-foreground">
         {profile.headline || "Complete your profile to improve your job matches."}
       </p>
+
+      <div className="mt-6">
+        <NextStepCard
+          profile={profile}
+          jobs={allJobs}
+          applications={applications}
+          savedJobs={savedJobs}
+        />
+      </div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat icon={Briefcase} label="Your match score" value={`${avg}%`} to="/jobs" cta="Browse recommended jobs" />

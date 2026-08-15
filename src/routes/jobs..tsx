@@ -13,7 +13,7 @@ import { JobListen } from "@/components/job-listen";
 import { BeforeYouApply } from "@/components/before-you-apply";
 import { EmployerInclusionCard } from "@/components/employer-inclusion";
 
-export const Route = createFileRoute("/jobs/$jobId")({
+export const Route = createFileRoute("/jobs/")({
   loader: ({ params }) => {
     const job = getJob(params.jobId);
     return job ? { job } : null;
