@@ -16,13 +16,17 @@ export const MIN_RESPONSES = 3;
 
 /** Clearly-labelled demo feedback so the aggregate view can be shown in a demo. */
 const DEMO: Record<string, { responses: number; ratings: Record<FeedbackCategory, number> }> = {
-  "Infosys BPM": {
+  "TechNova India": {
     responses: 6,
     ratings: { application: 4, interview: 5, communication: 4, assessment: 4 },
   },
-  "Tata Consultancy Services": {
+  "Kaveri Analytics": {
     responses: 5,
     ratings: { application: 4, interview: 4, communication: 5, assessment: 4 },
+  },
+  "Indus Digital Labs": {
+    responses: 4,
+    ratings: { application: 5, interview: 4, communication: 4, assessment: 3 },
   },
 };
 
