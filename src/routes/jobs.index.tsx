@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { JobCard } from "@/components/job-card";
@@ -9,6 +10,7 @@ import {
 } from "@/lib/jobs-data";
 import { EMPTY_FILTERS, filterJobs, type Filters } from "@/lib/search";
 import { useAppState } from "@/lib/app-state";
+import type { QueryChip } from "@/lib/voice-query";
 
 export const Route = createFileRoute("/jobs/")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -76,7 +78,10 @@ function JobsPage() {
   const navigate = useNavigate();
   const { allJobs } = useAppState();
   const [filters, setFilters] = useState<Filters>({ ...EMPTY_FILTERS, q });
-  const query = q || filters.q;
+  const [pending, setPending] = useState<{ filters: Filters; chips: QueryChip[]; heard: string } | null>(null);
+  const [announcement, setAnnouncement] = useState("");
+  const filterPanel = useRef<HTMLDivElement | null>(null);
+  const query = filters.q || q;
 
   const results = useMemo(() => filterJobs({ ...filters, q: query }, allJobs), [filters, query, allJobs]);
   const activeCount = GROUPS.reduce((n, g) => n + (filters[g.key] as string[]).length, 0);
@@ -95,6 +100,33 @@ function JobsPage() {
     navigate({ to: "/jobs", search: { q: value }, replace: true });
   };
 
+  const applyParsed = (next: Filters) => {
+    setFilters(next);
+    navigate({ to: "/jobs", search: { q: next.q }, replace: true });
+  };
+
+  /** Chips reflect every active filter, so removing one re-runs the search. */
+  const chips: QueryChip[] = [
+    ...(query ? [{ group: "q" as keyof Filters, value: query, label: query }] : []),
+    ...GROUPS.flatMap((g) =>
+      (filters[g.key] as string[]).map((v) => ({
+        group: g.key,
+        value: v,
+        label: g.options.find((o) => o.value === v)?.label ?? v,
+      })),
+    ),
+  ];
+
+  const removeChip = (chip: QueryChip) => {
+    if (chip.group === "q") {
+      setQuery("");
+      setAnnouncement(`Removed search term ${chip.label}.`);
+      return;
+    }
+    toggle(chip.group, chip.value);
+    setAnnouncement(`Removed filter ${chip.label}.`);
+  };
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <h1 className="text-3xl font-bold">Find your next opportunity</h1>
@@ -104,12 +136,95 @@ function JobsPage() {
       </p>
 
       <div className="mt-6">
-        <JobSearchBar value={query} onChange={setQuery} onSubmit={setQuery} />
+        <JobSearchBar
+          value={query}
+          onChange={setQuery}
+          onSubmit={setQuery}
+          onVoiceParse={(result) => setPending(result)}
+        />
       </div>
+
+      <p aria-live="polite" className="sr-only">{announcement}</p>
+
+      {pending ? (
+        <section
+          aria-labelledby="voice-understood"
+          className="surface-card mt-4 border-brand/40 p-4"
+        >
+          <h2 id="voice-understood" className="font-semibold">I understood:</h2>
+          <p className="mt-1 text-sm text-muted-foreground">You said: “{pending.heard}”</p>
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {pending.chips.length ? (
+              pending.chips.map((c) => (
+                <li
+                  key={`${c.group}-${c.value}`}
+                  className="rounded-full border border-border bg-secondary px-3 py-1 text-sm"
+                >
+                  {c.label}
+                </li>
+              ))
+            ) : (
+              <li className="text-sm text-muted-foreground">No filters — all jobs.</li>
+            )}
+          </ul>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button
+              onClick={() => {
+                applyParsed(pending.filters);
+                setAnnouncement(`Filters applied. ${pending.chips.length} interpreted from your voice search.`);
+                setPending(null);
+              }}
+            >
+              Apply filters
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                applyParsed(pending.filters);
+                setPending(null);
+                setAnnouncement("Filters applied. You can adjust them in the filter panel.");
+                filterPanel.current?.focus();
+              }}
+            >
+              Edit filters
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setPending(null);
+                setAnnouncement("Voice search cancelled. Your filters are unchanged.");
+              }}
+            >
+              Cancel
+            </Button>
+          </div>
+        </section>
+      ) : null}
+
+      {chips.length ? (
+        <div className="mt-4">
+          <h2 className="text-sm font-semibold">Active filters</h2>
+          <ul className="mt-2 flex flex-wrap gap-2">
+            {chips.map((chip) => (
+              <li key={`${chip.group}-${chip.value}`}>
+                <button
+                  type="button"
+                  onClick={() => removeChip(chip)}
+                  className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-border bg-secondary px-3 py-1 text-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label={`Remove filter ${chip.label}`}
+                >
+                  {chip.label}
+                  <X aria-hidden="true" className="size-3.5" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[300px_1fr]">
         <aside aria-label="Job filters">
-          <div className="surface-card p-4">
+          <div className="surface-card p-4" tabIndex={-1} ref={filterPanel}>
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">Filters</h2>
               {activeCount > 0 ? (

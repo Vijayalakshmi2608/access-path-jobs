@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApplicationsRouteImport } from './routes/applications'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as EmployerRouteImport } from './routes/employer'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ResumeMatchRouteImport } from './routes/resume-match'
 import { Route as SavedRouteImport } from './routes/saved'
@@ -38,6 +39,11 @@ const DashboardRoute = DashboardRouteImport.update({
 const EmployerRoute = EmployerRouteImport.update({
   id: '/employer',
   path: '/employer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -76,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/applications': typeof ApplicationsRoute
   '/dashboard': typeof DashboardRoute
   '/employer': typeof EmployerRoute
+  '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/resume-match': typeof ResumeMatchRoute
   '/saved': typeof SavedRoute
@@ -88,6 +95,7 @@ export interface FileRoutesByTo {
   '/applications': typeof ApplicationsRoute
   '/dashboard': typeof DashboardRoute
   '/employer': typeof EmployerRoute
+  '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/resume-match': typeof ResumeMatchRoute
   '/saved': typeof SavedRoute
@@ -101,6 +109,7 @@ export interface FileRoutesById {
   '/applications': typeof ApplicationsRoute
   '/dashboard': typeof DashboardRoute
   '/employer': typeof EmployerRoute
+  '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/resume-match': typeof ResumeMatchRoute
   '/saved': typeof SavedRoute
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
     | '/applications'
     | '/dashboard'
     | '/employer'
+    | '/privacy'
     | '/profile'
     | '/resume-match'
     | '/saved'
@@ -127,6 +137,7 @@ export interface FileRouteTypes {
     | '/applications'
     | '/dashboard'
     | '/employer'
+    | '/privacy'
     | '/profile'
     | '/resume-match'
     | '/saved'
@@ -139,6 +150,7 @@ export interface FileRouteTypes {
     | '/applications'
     | '/dashboard'
     | '/employer'
+    | '/privacy'
     | '/profile'
     | '/resume-match'
     | '/saved'
@@ -152,6 +164,7 @@ export interface RootRouteChildren {
   ApplicationsRoute: typeof ApplicationsRoute
   DashboardRoute: typeof DashboardRoute
   EmployerRoute: typeof EmployerRoute
+  PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRoute
   ResumeMatchRoute: typeof ResumeMatchRoute
   SavedRoute: typeof SavedRoute
@@ -188,6 +201,13 @@ declare module '@tanstack/react-router' {
       path: '/employer'
       fullPath: '/employer'
       preLoaderRoute: typeof EmployerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -240,6 +260,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApplicationsRoute: ApplicationsRoute,
   DashboardRoute: DashboardRoute,
   EmployerRoute: EmployerRoute,
+  PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRoute,
   ResumeMatchRoute: ResumeMatchRoute,
   SavedRoute: SavedRoute,

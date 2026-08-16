@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MatchPill } from "@/components/match-insights";
+import { AccessibilityFeedbackDialog } from "@/components/accessibility-feedback";
 import { APPLICATION_STATUSES, useAppState, type ApplicationStatus } from "@/lib/app-state";
 
 export const Route = createFileRoute("/applications")({
@@ -114,6 +115,19 @@ function ApplicationsPage() {
                 >
                   {open ? "Hide application details" : "View application details"}
                 </Button>
+
+                {["Interview", "Offer", "Rejected"].includes(a.status) ? (
+                  <div className="mt-3 rounded-md border border-border bg-secondary/40 p-3">
+                    <p className="text-sm">
+                      Reached the {a.status === "Interview" ? "interview stage" : "end of this process"}?
+                      Share how accessible it was — anonymous by default, and it only ever appears as
+                      an aggregate on the employer profile.
+                    </p>
+                    <div className="mt-2">
+                      <AccessibilityFeedbackDialog jobId={a.jobId} company={job.company} />
+                    </div>
+                  </div>
+                ) : null}
 
                 {open ? (
                   <dl id={panelId} className="mt-4 space-y-3 border-t border-border pt-4 text-sm">

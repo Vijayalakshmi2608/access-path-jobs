@@ -34,6 +34,10 @@ export type Profile = {
   sharePronouns: boolean;
   shareAccommodationsByDefault: boolean;
   shareOtherPersonal: boolean;
+  /** Preferred (display) name visibility. On by default so employers can address you. */
+  shareDisplayName: boolean;
+  /** Legal name visibility. Off by default — only for later payroll/background stages. */
+  shareLegalName: boolean;
 };
 
 export const EMPTY_PROFILE: Profile = {
@@ -43,7 +47,18 @@ export const EMPTY_PROFILE: Profile = {
   resumeName: "", resumeText: "", accessibilityPreferences: [],
   shareAccessibilityWithEmployers: false, sharePronouns: false,
   shareAccommodationsByDefault: false, shareOtherPersonal: false,
+  shareDisplayName: true, shareLegalName: false,
 };
+
+/** Privacy defaults applied by "Reset privacy settings". Private-first. */
+export const DEFAULT_PRIVACY = {
+  shareDisplayName: true,
+  shareLegalName: false,
+  sharePronouns: false,
+  shareAccessibilityWithEmployers: false,
+  shareAccommodationsByDefault: false,
+  shareOtherPersonal: false,
+} as const;
 
 export const APPLICATION_STATUSES = [
   "Applied", "Under Review", "Shortlisted", "Interview", "Offer", "Rejected",
@@ -67,18 +82,39 @@ export type Application = {
 
 export type FeedbackAnswer = "Yes" | "Partially" | "No";
 
+export const FEEDBACK_CATEGORIES = [
+  { key: "application", label: "Application" },
+  { key: "interview", label: "Interview" },
+  { key: "communication", label: "Communication" },
+  { key: "assessment", label: "Assessment" },
+] as const;
+export type FeedbackCategory = (typeof FEEDBACK_CATEGORIES)[number]["key"];
+
+export const FEEDBACK_BARRIERS = [
+  "Screen-reader issue",
+  "Keyboard accessibility issue",
+  "Captioning issue",
+  "Inaccessible assessment",
+  "Communication barrier",
+  "Missing accessibility information",
+  "Other",
+] as const;
+
 /**
- * Private accessibility feedback. Stored for moderation review only — it is
- * never published against an employer automatically.
+ * Accessibility feedback about a hiring process. Only aggregated ratings are
+ * ever shown on an employer profile — never an individual submission.
  */
 export type Feedback = {
   id: string;
   jobId: string;
+  company: string;
   date: string;
-  accessible: FeedbackAnswer;
-  respectful: FeedbackAnswer | "";
+  ratings: Partial<Record<FeedbackCategory, number>>;
+  barriers: string[];
   note: string;
-  status: "Awaiting moderation";
+  /** Anonymous by default: no candidate name is stored with the submission. */
+  anonymous: boolean;
+  status: "Recorded";
 };
 
 type State = {
@@ -103,6 +139,7 @@ type State = {
   addEmployerJob: (job: Job) => void;
   feedback: Feedback[];
   addFeedback: (f: Omit<Feedback, "id" | "date" | "status">) => void;
+  hasFeedback: (jobId: string) => boolean;
   allJobs: Job[];
   findJob: (id: string) => Job | undefined;
 };
@@ -221,10 +258,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           ...f,
           id: `${f.jobId}-${Date.now()}`,
           date: new Date().toISOString().slice(0, 10),
-          status: "Awaiting moderation" as const,
+          status: "Recorded" as const,
         },
         ...prev,
       ]),
+    hasFeedback: (jobId) => feedback.some((f) => f.jobId === jobId),
     allJobs,
     findJob: (id) => allJobs.find((j) => j.id === id),
   };

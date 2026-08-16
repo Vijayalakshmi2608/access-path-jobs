@@ -2,6 +2,9 @@ import { Building2, ShieldCheck, CircleDashed } from "lucide-react";
 import type { Job } from "@/lib/jobs-data";
 import { ACCESS_FEATURES, INCLUSION_FEATURES, JOBS } from "@/lib/jobs-data";
 import { transparencyCounts } from "@/lib/accessibility";
+import { employerInsights } from "@/lib/insights";
+import { useAppState } from "@/lib/app-state";
+import { StarsReadOnly } from "./accessibility-feedback";
 
 const HIRING: (keyof typeof ACCESS_FEATURES)[] = [
   "accessible_application", "accessible_interview", "keyboard_friendly", "screen_reader",
@@ -38,6 +41,8 @@ export function EmployerInclusionCard({ job }: { job: Job }) {
   const listings = JOBS.filter((j) => j.company === job.company);
   const counts = transparencyCounts(job);
   const label = (k: keyof typeof ACCESS_FEATURES) => ACCESS_FEATURES[k];
+  const { feedback } = useAppState();
+  const insights = employerInsights(job.company, feedback);
 
   return (
     <section aria-labelledby="employer-heading" className="surface-card p-5">
@@ -71,6 +76,30 @@ export function EmployerInclusionCard({ job }: { job: Job }) {
             </div>
           </dl>
         </div>
+      </div>
+
+      <div className="mt-5 border-t border-border pt-4">
+        <h3 className="text-sm font-semibold">Accessibility insights</h3>
+        {insights.enough ? (
+          <>
+            <dl className="mt-2 grid gap-2 sm:grid-cols-2">
+              {insights.rows.map((row) => (
+                <div key={row.key} className="flex items-center justify-between gap-3">
+                  <dt className="text-sm text-muted-foreground">{row.label}</dt>
+                  <dd>
+                    <StarsReadOnly value={row.average} />
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Based on aggregated candidate feedback ({insights.responses} responses).
+              {insights.demo ? " Demo feedback." : ""} Individual submissions are never shown.
+            </p>
+          </>
+        ) : (
+          <p className="mt-2 text-sm text-muted-foreground">Not enough candidate feedback yet.</p>
+        )}
       </div>
 
       <p className="mt-4 text-xs text-muted-foreground">
